@@ -18,16 +18,13 @@ scenarios; two seeds and asynchronous simulation execution do not support a
 statistical-superiority claim. Full individual outcomes, raw measurements and
 the descriptive summary are in `examples/paired_gazebo_20261108/`.
 
-The IEEE paper now includes the complete measured table and limitations.
-Its reviewed PDF is `output/pdf/rsdis_paper.pdf`. Presentation work remains
-deferred in the explicitly labelled PowerPoint working draft.
+The IEEE paper includes the complete measured table and limitations.
+Its PDF is [`report/rsdis_paper.pdf`](../report/rsdis_paper.pdf).
 
-## Earlier publication checkpoint, 8 November 2026
+## CI validation runs, 8 November 2026
 
-The code is published so it can be continued from another PC. Presentation work
-is deferred. At this earlier checkpoint the paper was a working draft and the
-paired-results section was pending. The completed version is linked above.
-The PowerPoint in `report/` is also a working draft, with a pending results table.
+The project was developed inside the team's course repository; the run links
+below point to its public GitHub Actions history.
 
 - 67 portable tests pass, with Ruff and Python compilation clean.
 - Native energy and 30-hazard map gate: [6351d85, all steps pass](https://github.com/pedror1beiro/meec/actions/runs/42502766396).

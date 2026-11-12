@@ -1,30 +1,22 @@
-# IEEE paper draft
+# IEEE paper
 
-`main.tex` uses the IEEEtran conference class. The reviewed, two-page draft is
-available at `../output/pdf/rsdis_paper_draft.pdf`.
+[`rsdis_paper.pdf`](rsdis_paper.pdf) is the final paper (IEEEtran conference
+class). [`main.tex`](main.tex) is its source, with the measured comparison table in
+[`comparison_results.tex`](comparison_results.tex) and the figures in
+[`figures/`](figures/).
 
-The source describes the implemented prototype, research question, allocation
-equations, comparison protocol and limitations. Its Results section is explicitly
-pending actual Gazebo experiments. The offline rehearsal values have not been
-presented as physical simulation results.
+The paper describes the implemented prototype, the research question, the
+allocation equations, the paired comparison protocol, the measured results from
+16 Gazebo runs and the limitations. [`rsdis_apresentacao.pptx`](rsdis_apresentacao.pptx)
+is the final presentation (in Portuguese).
 
-The author block identifies Henrique Correia (1221309), Pedro Ribeiro (1231177)
-and Francisco Liquito (1231216). Abstract and keyword labels use colon separators.
+`make_figures.py` regenerates the figures and `summarize_evaluation.py` rebuilds
+the results table from the run data in `../examples/paired_gazebo_20261108/`.
 
-Before submission, add measured results,
-insert actual Gazebo/RViz screenshots and experimental figures, and update the
-conclusions. Follow any paper-length or citation-style instructions supplied by
-the lecturers beyond the proposal.
-
-On Ubuntu with a LaTeX toolchain:
+Build on Ubuntu:
 
 ```bash
 sudo apt-get install latexmk texlive-publishers texlive-latex-recommended texlive-fonts-recommended
 cd report
 latexmk -pdf main.tex
 ```
-
-The built-in editor's preview compiler could not start on the Windows authoring
-machine. Local MiKTeX successfully compiled the source instead. Both final draft
-pages were rendered and visually reviewed; there were no unresolved references,
-font substitution warnings or overfull boxes in the final compilation.

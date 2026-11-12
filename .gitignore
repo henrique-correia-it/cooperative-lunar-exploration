@@ -13,5 +13,5 @@ tmp/
 *.aux
 *.log
 *.out
-# Small, labelled examples are versioned when this project sits inside the meec repository.
+# Small, labelled run examples are versioned as evidence.
 !examples/**/*.csv

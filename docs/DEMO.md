@@ -65,5 +65,4 @@ for large experimental batches. Use the host's screen recorder for Gazebo/RViz.
 8. Conclusions, limitations, upstream credits and next steps.
 
 The Space ROS model and adapted energy plugins are credited in
-`INTEGRATION_SOURCES.md` and the paper. See `ESTUDO_APRESENTACAO_PT.md` for
-the suggested division between the three presenters and defence questions.
+`INTEGRATION_SOURCES.md` and the paper.

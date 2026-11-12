@@ -1,55 +1,105 @@
 # Cooperative Lunar Exploration
 
-RSDIS academic project: two rovers explore a lunar test field, detect scientific
-markers, share discoveries, distribute inspections, recover from rover failures,
-and return to their bases. The research question is whether allocation that
-considers battery state improves mission outcomes compared with nearest-rover
-allocation under the same safety rules.
+[![Linux ROS and Gazebo checks](https://github.com/henrique-correia-it/cooperative-lunar-exploration/actions/workflows/linux-checks.yml/badge.svg)](https://github.com/henrique-correia-it/cooperative-lunar-exploration/actions/workflows/linux-checks.yml)
+![ROS 2 Jazzy](https://img.shields.io/badge/ROS%202-Jazzy-22314E?logo=ros)
+![Gazebo Harmonic](https://img.shields.io/badge/Gazebo-Harmonic-F58113)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![C++](https://img.shields.io/badge/C%2B%2B-Gazebo%20plugins-00599C?logo=cplusplus)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-| Student number | Team member |
+A team of two rovers explores a simulated lunar outpost in **ROS 2 Jazzy** and
+**Gazebo Harmonic**. They find scientific markers with their cameras, share what
+they see, split the inspections between them, survive a rover failure and drive
+back to base, all while their batteries drain, recharge in the sun and fall into
+the shade of the terrain.
+
+The research question: **does allocating tasks by battery state improve the
+mission compared with simply sending the nearest rover**, under exactly the same
+safety rules? The answer was measured in 16 paired Gazebo runs and written up as
+an [IEEE-format paper](report/rsdis_paper.pdf).
+
+<p align="center">
+  <img src="report/figures/map.png" alt="Lunar test field: 80 x 60 m outpost with rock fields, crater exclusions, habitat, solar array and the two rovers' survey sectors" width="720">
+</p>
+
+## Highlights
+
+- **Multi-robot coordination:** one owner per target, renewable leases, retries
+  and stale-rover detection, so no target is inspected twice and none is lost.
+- **Two allocation policies** with identical feasibility checks: nearest rover
+  (baseline) and battery-aware scoring.
+- **Camera perception:** OpenCV colour detection with range estimation from the
+  marker's known diameter, shared as typed ROS messages in a common world frame.
+- **Navigation:** bounded A*, footprint inflation, mapped hazards, peer detours,
+  short-lived laser obstacle memory and braking checks.
+- **Realistic energy:** C++ Gazebo plugins adapted from Space ROS for
+  rechargeable batteries and solar panels with rendered shadowing, reported as
+  standard `sensor_msgs/BatteryState` and electrical telemetry in V, A and Wh.
+- **Unreliable communications:** explicit DDS QoS plus seeded packet loss,
+  delay and outages at the application level, with bounded retries.
+- **Failure recovery:** disabling a rover releases its task, which the other
+  rover picks up.
+- **Mission control console:** live web map with cameras, routes, battery levels,
+  an activity log and pause, resume, recall and rover enable/disable controls.
+- **Reproducibility:** frozen scenarios, a source fingerprint in every run, and
+  GitHub Actions running the real sensors and complete missions on Linux.
+
+## Results
+
+16 Gazebo runs on 8 frozen, paired layouts, each run once with `nearest` and once
+with `energy` allocation.
+
+| Measure | Result |
 | --- | --- |
-| 1221309 | Henrique Correia |
-| 1231177 | Pedro Ribeiro |
-| 1231216 | Francisco Liquito |
+| Missions completed | **16 / 16** (all five targets confirmed, both rovers back at base) |
+| Footprint overlaps with obstacles | **0** (minimum conservative gap 0.53 m) |
+| Rover failures injected | all recovered; 44 cross-rover task reassignments |
+| Communication outage runs | all completed despite 3,052 lost deliveries and 460 retries |
+| Energy-aware vs nearest (mean paired difference) | **-9.37 s** mission time, **-2.90 m** distance, **-0.102 Wh** discharge |
 
-**Status: native energy and the obstacle-rich map validated in Linux CI.**
-Both map sizes complete with actual Gazebo cameras, rechargeable batteries and
-solar generation. The 80 x 60 m map now has 30 hazards/exclusions, including
-14 additional rocks, and recovers from a temporary rover failure with zero
-conservative footprint overlaps. The evaluation includes 16 completed Gazebo
-runs on eight frozen paired cases under nearest-rover and energy-aware allocation.
-Both policies finish all eight cases, with zero conservative footprint overlaps.
-The full per-run data and descriptive analysis are [retained here](examples/paired_gazebo_20261108/).
-See [validation](docs/VALIDATION.md), [integration sources](docs/INTEGRATION_SOURCES.md)
-and [the presentation study guide](docs/ESTUDO_APRESENTACAO_PT.md).
+The energy-aware policy was faster, shorter and used less energy on average, but
+the effect varies between layouts. With two seeds and asynchronous simulation we
+report it as a descriptive result, not as statistical superiority. Every
+individual run, with its raw telemetry, is in
+[`examples/paired_gazebo_20261108/`](examples/paired_gazebo_20261108/); the full
+record is in [docs/VALIDATION.md](docs/VALIDATION.md).
 
-## Start here on the other PC
+## Architecture
 
-The target environment is **Ubuntu 24.04, ROS 2 Jazzy and Gazebo Harmonic**.
-Copy this whole folder or extract the provided project archive. Linux commands
-below run from the project root. Do not copy `.venv`, `build`, `install` or `log`
-between operating systems.
+<p align="center">
+  <img src="report/figures/architecture.png" alt="System architecture: Gazebo world, per-rover agent, detector and power nodes, shared coordinator, network emulation and mission control" width="720">
+</p>
 
-1. Install ROS 2 Jazzy using the [official Ubuntu instructions](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html).
-2. Install this project's dependencies and build:
+| ROS 2 package | Contents |
+| --- | --- |
+| [`rsdis_lunar`](src/rsdis_lunar/rsdis_lunar/) | Python nodes: coordinator, rover agents, detector, navigation and planning, power, network emulation, dashboard, recorder, launch and mission configs |
+| [`rsdis_interfaces`](src/rsdis_interfaces/msg/) | Messages for detections, tasks, rover status and mission state |
+| [`rsdis_energy_plugins`](src/rsdis_energy_plugins/) | C++ Gazebo plugins for rechargeable batteries and solar panels, adapted from Space ROS |
+
+More detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and
+[docs/NAVIGATION.md](docs/NAVIGATION.md).
+
+## Quick start
+
+Target environment: **Ubuntu 24.04, ROS 2 Jazzy and Gazebo Harmonic**.
+
+1. Install ROS 2 Jazzy with the [official instructions](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html).
+2. Install the project's dependencies and build:
 
    ```bash
    bash scripts/setup_ubuntu.sh
    ```
 
-3. Start the two-rover mission (80 x 60 m outpost):
+3. Launch the two-rover mission on the 80 x 60 m outpost:
 
    ```bash
    bash scripts/run_demo.sh
    ```
 
-   Open [mission control](http://localhost:8765) on the Linux PC for the live map,
-   cameras, routes, battery levels, activity log, pause/resume, rover enable/disable,
-   and return-to-base controls. The console starts with the launch. Use
-   `dashboard:=false` to run without it, or `dashboard_port:=8766` for another port.
+   Open the mission control console at <http://localhost:8765>.
 
-4. Check that both cameras, odometry streams, detections and assignments work:
-   stop the previous launch first, then run:
+4. Check that cameras, odometry, detections and assignments work (stop the
+   previous launch first):
 
    ```bash
    source /opt/ros/jazzy/setup.bash
@@ -57,212 +107,105 @@ between operating systems.
    python3 scripts/smoke_test_ros.py --timeout 180
    ```
 
-The launch stops all its processes if a required node exits. Do not run two
-missions in the same ROS domain at once; the topic names are intentionally shared.
-For a separate team experiment, set a different `ROS_DOMAIN_ID` in every terminal
-belonging to that experiment.
-
-## What is implemented
-
-| Feature | Implemented behavior |
-| --- | --- |
-| Simulation | 80 x 60 m outpost, lunar gravity, rock fields, crater exclusions, habitat, solar array, two rovers, cameras and laser scans |
-| Exploration | Separate survey sectors, longer routes, full camera sweeps at route stops |
-| Perception | OpenCV colour-sphere detection and known-diameter range approximation |
-| Sharing | Typed ROS detections in a shared world frame; unique marker IDs suppress duplicates |
-| Coordination | One owner per target, renewable leases, retries, stale-rover detection |
-| Allocation | Nearest-rover baseline and battery-aware scoring with identical feasibility checks |
-| Navigation | Bounded A*, footprint inflation, mapped hazards, shared markers, peer detours, laser obstacle memory and braking/curve checks |
-| Operator control | Local web console with cameras, live paths and mission controls; ROS pause/resume and recall services |
-| Energy | Adapted Space ROS Gazebo batteries, rendered solar shadowing, measured-motion load and charging-pad power; standard ROS BatteryState |
-| Communication | Explicit DDS QoS and seeded application-channel loss/delay/outages, bounded retries, expiry checks and reconnect controls |
-| Recovery | A service disables a rover; its task is released and can be reassigned |
-| Completion | All five markers confirmed by camera, then both rovers parked at base |
-| Results | Electrical CSV telemetry in V/A/Wh, mission/network events, configuration, source fingerprint, summary; optional genuine camera video and ROS bag |
-
-The default world uses our lightweight rover models. An **optional
-`model:=viper` option** adapts the actual Space ROS rover meshes, inertias and
-steerable wheels to the same mission, with namespaced Gazebo joint controllers
-and joint-feedback interlocks. Linux CI validates full-circle turning, translation,
-joint feedback, real cameras/lidar and a complete compact mission with no
-conservative footprint overlaps. This does not validate its enlarged-map mission,
-uneven terrain. Native energy is the default for both profiles; the detailed
-rover has a separate validation record. See [the upstream guide](docs/UPSTREAM.md).
-
-To prepare the detailed rover on Linux after the default smoke test passes:
+### Useful options
 
 ```bash
-python3 scripts/fetch_upstream.py --assets
-python3 scripts/prepare_viper.py --validate-sdf
-bash scripts/run_demo.sh model:=viper
-# Stop the launch before this separate integration check:
-python3 scripts/smoke_test_ros.py --model viper --timeout 240
-```
+bash scripts/run_demo.sh strategy:=nearest           # baseline allocation
+bash scripts/run_demo.sh headless:=true              # no Gazebo GUI
+bash scripts/run_demo.sh network_profile:=outage     # communication fault experiment
+bash scripts/run_demo.sh rviz:=true                  # RViz view (needs ros-jazzy-rviz2)
+bash scripts/run_demo.sh model:=viper                # detailed Space ROS VIPER rover
+bash scripts/run_demo.sh config:="$PWD/src/rsdis_lunar/config/mission_small.json"  # 40 x 30 m map
 
-The world uses ground-truth odometry. Rocks, structures and crater exclusions are
-a known prior map; scientific target locations still come from camera detections.
-Crater depressions are visual features with navigation exclusions, not a physical
-heightmap. Laser returns provide short-lived local obstacle memory and a command
-safety gate. The controller does not implement SLAM, rough-terrain navigation,
-or scientific sample analysis.
-Coloured spheres stand in for points of scientific interest. Battery capacity,
-electrical coefficients and dock power are accelerated demonstration parameters,
-not calibrated VIPER data. The allocator uses a separate fraction-based budget
-heuristic; measured electrical energy is reported in Wh.
-
-## Useful runs
-
-```bash
-# Same world and safety constraints, nearest-rover allocation
-bash scripts/run_demo.sh strategy:=nearest
-
-# Gazebo server with EGL sensor rendering, without the desktop GUI
-bash scripts/run_demo.sh headless:=true
-
-# Repeatable mission-link fault experiment (application level)
-bash scripts/run_demo.sh network_profile:=outage
-
-# Explicit legacy synthetic energy, useful for isolating mission logic
-bash scripts/run_demo.sh energy_source:=synthetic
-
-# Optional RViz view (install ros-jazzy-rviz2 first)
-bash scripts/run_demo.sh rviz:=true
-
-# Custom mission configuration (absolute path)
-bash scripts/run_demo.sh config:=/absolute/path/to/mission.json
-
-# Compact 40 x 30 m map for a quicker integration check
-bash scripts/run_demo.sh config:="$PWD/src/rsdis_lunar/config/mission_small.json"
-
-# Pause and resume mission commands (Gazebo keeps running)
-ros2 service call /mission/set_paused std_srvs/srv/SetBool '{data: true}'
-ros2 service call /mission/set_paused std_srvs/srv/SetBool '{data: false}'
-
-# End exploration and recall both rovers
-ros2 service call /mission/recall std_srvs/srv/Trigger '{}'
-
-# Failure injection in a second sourced terminal
+# Inject a failure and restore it, from a second sourced terminal
 ros2 service call /rover1/set_enabled std_srvs/srv/SetBool '{data: false}'
-# Restore the rover
 ros2 service call /rover1/set_enabled std_srvs/srv/SetBool '{data: true}'
 
-# Observe the mission
-ros2 topic echo /mission/status
-ros2 topic echo /mission/detections
-ros2 topic echo /mission/results
-ros2 topic echo /mission/state
-ros2 topic echo /rover1/battery
+# Recall both rovers
+ros2 service call /mission/recall std_srvs/srv/Trigger '{}'
 ```
 
-The GUI opens Gazebo. Select a rover in the entity tree and press **F** to focus it.
-Use `rqt_image_view` if installed to inspect `/rover1/camera/image` or
-`/rover2/camera/image`. In RViz2, use fixed frame `world`; the optional monitor
-publishes mission markers and paths (see launch options).
+The VIPER model needs its assets first: `python3 scripts/fetch_upstream.py --assets`
+and `python3 scripts/prepare_viper.py --validate-sdf` (see [docs/UPSTREAM.md](docs/UPSTREAM.md)).
+Each run writes its telemetry, events, configuration and summary to a unique
+folder under `results/`.
 
-If a rover stops, inspect its console navigation state or
-`ros2 topic echo /rover1/navigation_state`. `waiting_for_scan` means that the
-laser stream is absent, stale or invalid. `path_blocked` means no safe route was
-found; an inspection is released after a sustained block so the team can retry.
-See [navigation and map changes](docs/NAVIGATION.md) for assumptions and checks.
+### Without ROS (any OS)
 
-Each run writes to a unique directory under `results/`. A normal success summary
-has `reason: all_targets_confirmed_and_returned`. A time-limited or interrupted
-run is retained and must not be discarded from experimental results.
+The offline rehearsal shares the real coordinator and rover logic, with simple
+kinematics and oracle detections, and writes an HTML playback of the mission:
 
-## Portable rehearsal on Windows
-
-This does not need ROS, Gazebo or extra Python packages:
-
-```powershell
+```bash
 python scripts/offline_demo.py
 python scripts/offline_demo.py --failure-at 20 --failure-duration 30
 python scripts/compare_offline.py --seeds 3
 ```
 
-Open the generated `results/.../playback.html` in a browser to play the mission.
-The rehearsal shares the actual coordinator and rover control logic, but uses
-kinematic motion and **oracle detections from target coordinates**. It is a
-debugging tool, not evidence of camera accuracy or physical feasibility.
+It is a debugging tool, not evidence of camera accuracy or physical feasibility.
 
-## Tests
-
-Core and world tests use Python's standard library:
+## Experiments and tests
 
 ```bash
+# Portable tests (standard library; OpenCV image tests run when it is installed)
 python3 -m unittest discover -s tests -v
-```
 
-On Ubuntu, the setup script installs OpenCV so image tests run too. On Windows:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
-
-The GitHub Actions workflow builds the ROS packages in a Jazzy container and runs
-the real sensor smoke test on Linux when this project is pushed to a repository.
-The project workflow also runs a complete compact mission and audits conservative
-footprint clearance, then checks the expanded map with an injected rover failure.
-See [the validation record](docs/VALIDATION.md) for what was
-actually executed and what remains pending.
-
-For the frozen native-energy comparison, follow [the experiment protocol](docs/EXPERIMENTS.md).
-For an actual expanded-map recording and metrics-only ROS bag:
-
-```bash
+# Record a real expanded-map run with video and a ROS bag
 python3 scripts/create_scenarios.py --count 1 --output results/demo_scenarios
 python3 scripts/run_experiment_ros.py --config results/demo_scenarios/failure_00.json \
   --strategy energy --record-video --record-bag --wall-timeout 2400
 ```
 
-The unique run folder contains `mission.mp4`, `video_metadata.json`,
-`rosbag/`, camera checkpoints and the measurements. Recording uses real rendered
-Gazebo images at nominal 5x simulation playback speed; it requires FFmpeg.
+The paired comparison protocol is in [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md).
+GitHub Actions builds the packages in a Jazzy container and runs the real sensor
+smoke test, a complete compact mission with a clearance audit, and the expanded
+map with an injected rover failure.
 
-The console saves its latest map, paths, site states and camera frames as a
-checkpoint in the run directory. To inspect a downloaded ROS run on Windows:
-
-```powershell
-python scripts/view_recorded_console.py --run path/to/the/run
-```
-
-Open the printed local address. Recorded checkpoints have disabled mission
-controls and a visible recorded-data label.
-
-## Optional Docker build on Linux
+A Docker build is also available:
 
 ```bash
 docker build -f docker/Dockerfile -t rsdis-lunar .
-# Use software rendering for a first headless check; camera rendering may be slow.
 docker run --rm -e LIBGL_ALWAYS_SOFTWARE=1 -v "$PWD/results:/workspace/results" rsdis-lunar
 ```
 
-Hardware rendering depends on the Linux host's graphics setup. A native Ubuntu
-run is the first validation path. The upstream `run_gpu.sh` is not a Windows
-launcher and is not executed by our setup scripts.
+## Repository layout
 
-## Project documents
-
-- [Proposal criteria and acceptance checks](docs/PROPOSAL_COMPLIANCE.md)
-- [System architecture and assumptions](docs/ARCHITECTURE.md)
-- [Experiment protocol](docs/EXPERIMENTS.md)
-- [Upstream sources and integration plan](docs/UPSTREAM.md)
-- [Linux handoff and troubleshooting](docs/HANDOFF.md)
-- [Continue from the meec GitHub repository](docs/CONTINUATION.md)
-- [Demo recording and presentation plan](docs/DEMO.md)
-- [Local validation record](docs/VALIDATION.md)
-
-The IEEE paper source is under `report/`, with measured results from the complete
-paired batch, figures, methods, sources and limitations. The reviewed PDF is
-`output/pdf/rsdis_paper.pdf`. The presentation remains a working draft in
-`report/rsdis_presentation_working.pptx`, saved for the team to continue later.
-
-The transfer bundle is `output/rsdis_lunar_project.zip`, with a SHA-256 checksum
-beside it. It contains source, fixed scenarios, the paper and labelled evidence.
-It excludes machine-specific environments, large upstream
-assets and intermediate build folders. Regenerate it with:
-
-```bash
-python3 scripts/build_archive.py
+```text
+src/            ROS 2 packages (mission logic, interfaces, Gazebo energy plugins)
+worlds/         Lunar test field (SDF)
+scripts/        Setup, launch, experiments, analysis and offline rehearsal
+tests/          Portable unit tests
+experiments/    Frozen scenario definitions
+examples/       Recorded runs used as evidence, with HTML playbacks
+report/         IEEE paper (PDF and LaTeX), figures and final presentation
+docs/           Architecture, navigation, experiments, validation and upstream notes
+docker/         Container build
 ```
+
+## Assumptions and limitations
+
+- Odometry is ground truth from the simulator; there is no SLAM.
+- Rocks, structures and crater exclusions are a known prior map. Target positions
+  still come only from camera detections.
+- Craters are visual features with navigation exclusions, not a physical heightmap.
+- Coloured spheres stand in for points of scientific interest.
+- Battery capacity, electrical coefficients and dock power are accelerated
+  demonstration values, not calibrated VIPER data.
+
+## Team
+
+Developed for the Distributed Sensor Networks course (RSDIS) of the MSc in
+Electrical and Computer Engineering at ISEP (Instituto Superior de Engenharia do
+Porto), 2026.
+
+- **Henrique Correia** ([@henrique-correia-it](https://github.com/henrique-correia-it)): perception, map and motion
+- **Pedro Ribeiro** ([@pedror1beiro](https://github.com/pedror1beiro)): ROS and Gazebo integration, energy
+- **Francisco Liquito** ([@FranciscoLiquito19](https://github.com/FranciscoLiquito19)): cooperation, communication and evaluation
+
+## Credits and license
+
+The energy plugins and the optional VIPER rover are adapted from
+[Space ROS demos](https://github.com/space-ros/demos) and
+[Space ROS simulation](https://github.com/space-ros/simulation); see
+[NOTICE](NOTICE) and [docs/INTEGRATION_SOURCES.md](docs/INTEGRATION_SOURCES.md).
+External files keep their original licences. Everything else is released under
+the [Apache License 2.0](LICENSE).
